@@ -142,7 +142,7 @@ static constexpr const char *filebasename(const char *s)
 |
 \****************************************************************************/
 
-static const char sVersion[] = "0.1.0";
+static const char sVersion[] = "0.1.1";
 
 /****************************************************************************\
 |
@@ -381,12 +381,8 @@ uint32_t gRebootMs;
 
 void setup_uplink(void)
         {
-//#if defined(_mcci_arduino_version) && _mcci_arduino_version >= _mcci_arduino_version_calc(2,4,0,90) && \
-//    defined(CATENA_ARDUINO_PLATFORM_VERSION_CALC) && CATENA_ARDUINO_PLATFORM_VERSION >= CATENA_ARDUINO_PLATFORM_VERSION_CALC(0,17,0,10)
-//        LMIC_setClockError(1*65536/100);
-//#else
-//        LMIC_setClockError(1*65536/100);
-//#endif
+        LMIC_setClockError(1*65536/100);
+
         /* figure out when to reboot */
         gRebootMs = (CATCFG_T_REBOOT + os_getRndU2() - 32768) * 1000;
 
