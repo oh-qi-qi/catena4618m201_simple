@@ -117,6 +117,27 @@ static Arduino_LoRaWAN::ReceivePortBufferCbFn receiveMessage;
 
 /****************************************************************************\
 |
+|   handy constexpr to extract the base name of a file
+|
+\****************************************************************************/
+
+// two-argument version: first arg is what to return if we don't find
+// a directory separator in the second part.
+static constexpr const char *filebasename(const char *s, const char *p)
+    {
+    return p[0] == '\0'                     ? s                            :
+           (p[0] == '/' || p[0] == '\\')    ? filebasename(p + 1, p + 1)   :
+                                              filebasename(s, p + 1)       ;
+    }
+
+static constexpr const char *filebasename(const char *s)
+    {
+    return filebasename(s, s);
+    }
+
+
+/****************************************************************************\
+|
 |	READ-ONLY DATA
 |
 \****************************************************************************/
@@ -229,7 +250,7 @@ void setup_platform(void)
 
         gCatena.SafePrintf("\n");
         gCatena.SafePrintf("-------------------------------------------------------------------------------\n");
-        gCatena.SafePrintf("This is the catena4618_simple program V%s.\n", sVersion);
+        gCatena.SafePrintf("This is %s V%s.\n", filebasename(__FILE__), sVersion);
                 {
                 char sRegion[16];
                 gCatena.SafePrintf("Target network: %s / %s\n",
