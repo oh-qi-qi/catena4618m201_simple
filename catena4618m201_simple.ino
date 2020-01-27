@@ -30,7 +30,6 @@ Revision history:
 #include <Catena_Mx25v8035f.h>
 
 #include <Wire.h>
-#include <Catena-SHT3x.h>
 #include <Arduino_LoRaWAN.h>
 #include <Catena_Si1133.h>
 #include <lmic.h>
@@ -41,7 +40,19 @@ Revision history:
 #include <type_traits>
 
 using namespace McciCatena;
-using namespace McciCatenaSht3x;
+
+#if defined(ARDUINO_MCCI_CATENA_4618)
+# include <Catena-SHT3x.h>
+  using cTemperatureSensor = McciCatenaSht3x::cSHT3x;
+  using namespace McciCatenaSht3x;
+#elif defined(ARDUINO_MCCI_CATENA_4617)
+# include <Catena-HS300x.h>
+  using cTemperatureSensor = McciCatenaHs300x::cHS300x;
+  using namespace McciCatenaHs300x;
+#else
+#  error Platform not supported
+#endif
+
 
 /****************************************************************************\
 |
@@ -166,8 +177,9 @@ Catena::LoRaWAN gLoRaWAN;
 StatusLed gLed (Catena::PIN_STATUS_LED);
 
 //   The temperature/humidity sensor
-cSHT3x gSht3x {Wire};
-bool fSht3x;
+cTemperatureSensor gTemperatureSensor {Wire};
+
+bool fTemperatureSensor;
 
 //   The LUX sensor
 Catena_Si1133 gSi1133;
@@ -230,7 +242,7 @@ void setup(void)
 
         setup_platform();
         setup_light();
-        setup_sht3x();
+        setup_temp_rh();
         setup_flash();
         setup_uplink();
         }
@@ -347,16 +359,16 @@ void setup_light(void)
                 }
         }
 
-void setup_sht3x(void)
+void setup_temp_rh(void)
         {
-        if (gSht3x.begin())
+        if (gTemperatureSensor.begin())
                 {
-                fSht3x = true;
+                fTemperatureSensor = true;
                 }
         else
                 {
-                fSht3x = false;
-                gCatena.SafePrintf("No SHT-3x found: check hardware\n");
+                fTemperatureSensor = false;
+                gCatena.SafePrintf("No temperature/humidity sensor found: check hardware\n");
                 }
         }
 
@@ -454,17 +466,17 @@ void fillBuffer(TxBuffer_t &b)
                 flag |= FlagsSensorPort3::FlagBoot;
                 }
 
-        if (fSht3x)
+        if (fTemperatureSensor)
                 {
-                cSHT3x::Measurements m;
-                bool fResult = gSht3x.getTemperatureHumidity(m);
+                cTemperatureSensor::Measurements m;
+                bool fResult = gTemperatureSensor.getTemperatureHumidity(m);
 
                 if (fResult)
                         {
                         // temperature is 2 bytes from -0x80.00 to +0x7F.FF degrees C
                         // humidity is 2 bytes, where 0 == 0/0xFFFF and 0xFFFFF == 1.
                         gCatena.SafePrintf(
-                                "SHT3x:  T: %d RH: %d\n",
+                                "Env:  T: %d RH: %d\n",
                                 (int) (m.Temperature + 0.5f),
                                 (int) m.Humidity
                                 );
@@ -478,7 +490,7 @@ void fillBuffer(TxBuffer_t &b)
                 else
                         {
                         gCatena.SafePrintf(
-                                "SHT3x not found\n"
+                                "Env sensor not found\n"
                                 );
                         }
                 }
